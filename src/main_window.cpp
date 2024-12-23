@@ -11,36 +11,39 @@
 
 #include "../include/gamecontroller/main_window.hpp"
 
-MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent), ui(new Ui::RobocupController)
+MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::RobocupController)
 {
-  ui->setupUi(this);
+    ui->setupUi(this);
 
-  bool isInit = initAddrAndPort();
-      if(isInit){
+    bool isInit = initAddrAndPort();
+    if (isInit)
+    {
         std::cout << "===== GAME CONTROLLER OPEN =====" << std::endl;
-    } else {
+    }
+    else
+    {
         std::cout << "======= INITIALIZE FAIL ========" << std::endl;
         exit(0);
     }
 
-  QIcon icon("://ros-icon.png");
-  this->setWindowIcon(icon);
+    QIcon icon("://ros-icon.png");
+    this->setWindowIcon(icon);
 
-  qnode = new QNode();
+    qnode = new QNode();
 
-  QObject::connect(qnode, SIGNAL(rosShutDown()), this, SLOT(close()));
+    QObject::connect(qnode, SIGNAL(rosShutDown()), this, SLOT(close()));
 }
 
-void MainWindow::closeEvent(QCloseEvent* event)
+void MainWindow::closeEvent(QCloseEvent *event)
 {
-  QMainWindow::closeEvent(event);
+    QMainWindow::closeEvent(event);
 }
 
 MainWindow::~MainWindow()
 {
-  delete ui;
-  delete m_pReadSocket;
-  delete m_pSendSocket;
+    delete ui;
+    delete m_pReadSocket;
+    delete m_pSendSocket;
 }
 
 bool MainWindow::initAddrAndPort()
@@ -51,29 +54,33 @@ bool MainWindow::initAddrAndPort()
     clock_t timeoutCnt_start = clock();
     clock_t timeoutCnt_end = clock();
 
-    while(!isOpen_Network)
+    while (!isOpen_Network)
     {
         timeoutCnt_end = clock();
-        if(double(timeoutCnt_end - timeoutCnt_start)/CLOCKS_PER_SEC > 1){
+        if (double(timeoutCnt_end - timeoutCnt_start) / CLOCKS_PER_SEC > 1)
+        {
             isTimeOut = true;
         }
 
         QList<QHostAddress> ipAddressesList = QNetworkInterface::allAddresses();
 
-        for(int i=0;i<ipAddressesList.size();i++)
+        for (int i = 0; i < ipAddressesList.size(); i++)
         {
-//            std::cout << i << " " << ipAddressesList.at(i).toString().toStdString() << std::endl;
-            if(ipAddressesList.at(i) != QHostAddress::LocalHost && ipAddressesList.at(i).toIPv4Address())
+            //            std::cout << i << " " << ipAddressesList.at(i).toString().toStdString() << std::endl;
+            if (ipAddressesList.at(i) != QHostAddress::LocalHost && ipAddressesList.at(i).toIPv4Address())
             {
-                if(isTimeOut){
-                    if(ipAddressesList.at(i).toString().toStdString().find("172") != std::string::npos) // 192
+                if (isTimeOut)
+                {
+                    if (ipAddressesList.at(i).toString().toStdString().find("172") != std::string::npos) // 192
                     {
                         m_qstrIp = ipAddressesList.at(i).toString();
                         isOpen_Network = true;
                         break;
                     }
-                } else {
-                    if(ipAddressesList.at(i).toString().toStdString().find("192") != std::string::npos) // 192
+                }
+                else
+                {
+                    if (ipAddressesList.at(i).toString().toStdString().find("192") != std::string::npos) // 192
                     {
                         m_qstrIp = ipAddressesList.at(i).toString();
                         isOpen_Network = true;
@@ -83,7 +90,7 @@ bool MainWindow::initAddrAndPort()
             }
         }
 
-        if(m_qstrIp.isEmpty())
+        if (m_qstrIp.isEmpty())
         {
             m_qstrIp = QHostAddress(QHostAddress::LocalHost).toString();
         }
@@ -97,14 +104,14 @@ bool MainWindow::initAddrAndPort()
 void MainWindow::initSocket()
 {
     cout << "initSocket" << endl;
-    if(m_pReadSocket==nullptr)
+    if (m_pReadSocket == nullptr)
     {
         m_pReadSocket = new QUdpSocket(this);
     }
 
-    if(m_pReadSocket!=nullptr && m_pReadSocket->bind(m_iPort, QUdpSocket::ShareAddress))
+    if (m_pReadSocket != nullptr && m_pReadSocket->bind(m_iPort, QUdpSocket::ShareAddress))
     {
-        m_bIsServerOpen=true;
+        m_bIsServerOpen = true;
         ui->checkBox_side->setEnabled(false);
         ui->checkBox_kickoff->setEnabled(false);
         ui->comboBox_number->setEnabled(false);
@@ -113,7 +120,7 @@ void MainWindow::initSocket()
 
         ui->Server_Open->setText("CLOSE");
 
-        connect(m_pReadSocket,SIGNAL(readyRead()),this,SLOT(readData()));
+        connect(m_pReadSocket, SIGNAL(readyRead()), this, SLOT(readData()));
         readData();
     }
 }
@@ -123,7 +130,7 @@ void MainWindow::closeSocket()
     ui->checkBox_side->setEnabled(true);
     ui->checkBox_kickoff->setEnabled(true);
     ui->comboBox_number->setEnabled(true);
-    if(ui->comboBox_position->currentIndex() != POSITION_TECHNICAL)
+    if (ui->comboBox_position->currentIndex() != POSITION_TECHNICAL)
     {
         ui->comboBox_position->setEnabled(true);
     }
@@ -132,7 +139,7 @@ void MainWindow::closeSocket()
     ui->checkBox_side->setTristate(false);
     ui->checkBox_side->setText("Left (first half)");
 
-    disconnect(m_pReadSocket,SIGNAL(readyRead()),this,SLOT(readData()));
+    disconnect(m_pReadSocket, SIGNAL(readyRead()), this, SLOT(readData()));
     ui->textEdit->clear();
 
     ui->Server_Open->setText("OPEN");
@@ -144,7 +151,7 @@ void MainWindow::closeSocket()
 
 void MainWindow::on_comboBox_position_currentIndexChanged(int index)
 {
-    if(index == POSITION_TECHNICAL)
+    if (index == POSITION_TECHNICAL)
     {
         ChangeTechnicalMode();
         ui->Server_Open->setEnabled(false);
@@ -152,9 +159,12 @@ void MainWindow::on_comboBox_position_currentIndexChanged(int index)
         return;
     }
 
-    if(index != POSITION){
+    if (index != POSITION)
+    {
         ui->Server_Open->setEnabled(true);
-    } else {
+    }
+    else
+    {
         ui->Server_Open->setEnabled(false);
     }
 }
@@ -166,7 +176,7 @@ void MainWindow::on_comboBox_state_currentIndexChanged(int index)
     qnode->gameControlData.position = position;
     qnode->gameControlData.state = index;
 
-    if(index == 1) //state: ready
+    if (index == 1) // state: ready
     {
         qnode->gameControlData.readytime = 30;
     }
@@ -180,7 +190,7 @@ void MainWindow::on_comboBox_state_currentIndexChanged(int index)
 
 void MainWindow::on_Server_Open_clicked()
 {
-    if(m_bIsServerOpen == false)
+    if (m_bIsServerOpen == false)
     {
         playerNum = ui->comboBox_number->currentIndex();
 
@@ -188,20 +198,21 @@ void MainWindow::on_Server_Open_clicked()
 
         position = ui->comboBox_position->currentIndex();
 
-        switch (ui->comboBox_team->currentIndex()) {
+        switch (ui->comboBox_team->currentIndex())
+        {
         case 0: // ROBIT
-          myTeam = TEAM_ROBIT;
-          break;
-        case 1: //ROBIT_RED
-          myTeam = TEAM_ROBIT_RED;
-          break;
-        case 2: //ROBIT_BLUE
-          myTeam = TEAM_ROBIT_BLUE;
-          break;
+            myTeam = TEAM_ROBIT;
+            break;
+        case 1: // ROBIT_RED
+            myTeam = TEAM_ROBIT_RED;
+            break;
+        case 2: // ROBIT_BLUE
+            myTeam = TEAM_ROBIT_BLUE;
+            break;
         default:
-          myTeam = TEAM_ROBIT;
-          ui->comboBox_team->setCurrentIndex(0);
-          break;
+            myTeam = TEAM_ROBIT;
+            ui->comboBox_team->setCurrentIndex(0);
+            break;
         }
         qnode->gameControlData.myteam = myTeam;
 
@@ -215,7 +226,7 @@ void MainWindow::on_Server_Open_clicked()
         qnode->gamecontrollerPub->publish(qnode->gameControlData);
 
         g_timer = new QTimer(this);
-        QObject::connect(g_timer,SIGNAL(timeout()),this,SLOT(udpSend_callback()));
+        QObject::connect(g_timer, SIGNAL(timeout()), this, SLOT(udpSend_callback()));
         g_timer->start(100);
     }
     else
@@ -223,7 +234,6 @@ void MainWindow::on_Server_Open_clicked()
         closeSocket();
         delete g_timer;
     }
-
 }
 
 void MainWindow::ChangeTechnicalMode()
@@ -235,7 +245,7 @@ void MainWindow::ChangeTechnicalMode()
     ui->label_title->setText("TECHNICAL CONTROLLER");
     ui->label_title->setStyleSheet("font-size:20pt");
 
-    for(int i = 0; i < 5; i++)
+    for (int i = 0; i < 5; i++)
     {
         ui->comboBox_state->removeItem(0);
     }
@@ -264,18 +274,18 @@ void MainWindow::readData()
     QByteArray str;
     str.resize(m_pReadSocket->bytesAvailable());
 
-    m_pReadSocket->readDatagram(str.data(),str.size(),&senderAddress,&senderPort);
+    m_pReadSocket->readDatagram(str.data(), str.size(), &senderAddress, &senderPort);
 
-    qDebug() << "From : "<<senderAddress.toString();
-    qDebug() << "Port : "<<senderPort;
-    qDebug() << "Message : "<<str.size();
+    qDebug() << "From : " << senderAddress.toString();
+    qDebug() << "Port : " << senderPort;
+    qDebug() << "Message : " << str.size();
 
-    cout<<"============= GAME INFO ============="<<endl;
-    cout<<"SIDE : "<<mySide<<endl;
-    cout<<"playerNum = "<<playerNum + 1<<endl;
-    cout<<"position  = "<<position<<endl;
+    cout << "============= GAME INFO =============" << endl;
+    cout << "SIDE : " << mySide << endl;
+    cout << "playerNum = " << playerNum + 1 << endl;
+    cout << "position  = " << position << endl;
 
-    if(str.size() == 688)
+    if (str.size() == 688)
     {
         ui->textEdit->clear();
 
@@ -285,30 +295,31 @@ void MainWindow::readData()
         cout << "half = " << (int)robocupData.firstHalf << endl;
         cout << "kickoff team = " << (int)robocupData.kickOffTeam << endl;
         cout << "secondary = " << (int)robocupData.secondaryState << endl;
-        cout<<"Team 0 Number"<<(int)robocupData.teams[0].teamNumber<<endl;
-        cout<<"Team 1 Number"<<(int)robocupData.teams[1].teamNumber<<endl;
+        cout << "Team 0 Number" << (int)robocupData.teams[0].teamNumber << endl;
+        cout << "Team 1 Number" << (int)robocupData.teams[1].teamNumber << endl;
 
         mySide = robocupData.teams[0].teamNumber == myTeam ? 0 : 1;
 
-        if(robocupData.teams[0].teamNumber != myTeam &&
-           robocupData.teams[1].teamNumber != myTeam) {
+        if (robocupData.teams[0].teamNumber != myTeam &&
+            robocupData.teams[1].teamNumber != myTeam)
+        {
 
-          cout << "!!NOT OUR GAME!!" << endl;
-          return;
+            cout << "!!NOT OUR GAME!!" << endl;
+            return;
         }
 
         qnode->gameControlData.robotnum = playerNum + 1;
         qnode->gameControlData.position = position;
 
-        qnode->gameControlData.state         = (int)robocupData.state;
-        qnode->gameControlData.myside        = /*robocupData.firstHalf ? initSide : !initSide;*/mySide;
-        qnode->gameControlData.iskickoff     = (robocupData.kickOffTeam == myTeam) ? true : false;
-        qnode->gameControlData.secondstate   = (int)robocupData.secondaryState;
+        qnode->gameControlData.state = (int)robocupData.state;
+        qnode->gameControlData.myside = /*robocupData.firstHalf ? initSide : !initSide;*/ mySide;
+        qnode->gameControlData.iskickoff = (robocupData.kickOffTeam == myTeam) ? true : false;
+        qnode->gameControlData.secondstate = (int)robocupData.secondaryState;
         qnode->gameControlData.readytime = (int)robocupData.secondaryTime;
         qnode->gameControlData.penalty = (int)robocupData.teams[mySide].players[playerNum].penalty;
 
         qnode->gameControlData.secondinfo.clear();
-        for(int i = 0; i < 4; i++)
+        for (int i = 0; i < 4; i++)
         {
             qnode->gameControlData.secondinfo.push_back((int)robocupData.secondaryStateInfo[i]);
             std::cout << "secondary info = " << qnode->gameControlData.secondinfo[i] << " " << std::endl;
@@ -316,21 +327,20 @@ void MainWindow::readData()
 
         mySide = qnode->gameControlData.myside;
 
-        std::cout << endl << endl;
+        std::cout << endl
+                  << endl;
 
         qnode->gamecontrollerPub->publish(qnode->gameControlData);
 
         uiUpdate();
-
     }
-    qnode->gameControlData.robotnum=playerNum+1;
-
-
+    qnode->gameControlData.robotnum = playerNum + 1;
 }
 
 void MainWindow::uiUpdate()
 {
-    switch (robocupData.gameType) {
+    switch (robocupData.gameType)
+    {
     case GAME_ROUNDROBIN:
         ui->textEdit->append("ROUNDROBIN");
         break;
@@ -359,14 +369,18 @@ void MainWindow::uiUpdate()
     }
 
     int secs_remaining = (int)robocupData.secsRemaining;
-    if(secs_remaining > 600) {
+    if (secs_remaining > 600)
+    {
         secs_remaining = secs_remaining - 65536;
     }
     ui->textEdit->append("secs remaining: " + QString::number(secs_remaining) + "\n");
 
-    if(qnode->gameControlData.myside == LEFT) {
+    if (qnode->gameControlData.myside == LEFT)
+    {
         ui->textEdit->append("side: LEFTSIDE");
-    } else {
+    }
+    else
+    {
         ui->textEdit->append("side: RIGHTSIDE");
     }
     ui->checkBox_side->setCheckState(Qt::CheckState::PartiallyChecked);
@@ -386,13 +400,15 @@ void MainWindow::uiUpdate()
         break;
     case STATE_PLAYING:
         ui->textEdit->append("state: PLAY");
-        if(qnode->gameControlData.readytime){
+        if (qnode->gameControlData.readytime)
+        {
             ui->textEdit->append("kick-off time: " + QString::number(qnode->gameControlData.readytime));
         }
         break;
     case STATE_FINISHED:
         ui->textEdit->append("state: FINISH");
-        if(qnode->gameControlData.readytime){
+        if (qnode->gameControlData.readytime)
+        {
             ui->textEdit->append("half time: " + QString::number(qnode->gameControlData.readytime));
         }
         break;
@@ -402,8 +418,10 @@ void MainWindow::uiUpdate()
     ui->comboBox_state->setEnabled(false);
     ui->comboBox_state->setCurrentIndex(robocupData.state);
 
-    if(qnode->gameControlData.iskickoff) ui->textEdit->append("kickoff: YES");
-    else ui->textEdit->append("kickoff: NO");
+    if (qnode->gameControlData.iskickoff)
+        ui->textEdit->append("kickoff: YES");
+    else
+        ui->textEdit->append("kickoff: NO");
 
     switch (qnode->gameControlData.penalty)
     {
@@ -431,9 +449,9 @@ void MainWindow::uiUpdate()
     default:
         ui->textEdit->append("penalty: NONE");
         break;
-
     }
-    if(qnode->gameControlData.penalty != NONE) {
+    if (qnode->gameControlData.penalty != NONE)
+    {
         ui->textEdit->append("secsTillUnpenalised: " + QString::number((int)robocupData.teams[mySide].players[playerNum].secsTillUnpenalised));
     }
 
@@ -492,21 +510,24 @@ void MainWindow::uiUpdate()
     }
 }
 
-void MainWindow::udpSend_callback()   //send udp data
+void MainWindow::udpSend_callback() // send udp data
 {
     QByteArray Data;
 
-    if(m_pSendSocket == nullptr){
+    if (m_pSendSocket == nullptr)
+    {
         m_pSendSocket = new QUdpSocket(this);
     }
 
     strncpy(robocupreturnData.header, GAMECONTROLLER_RETURN_STRUCT_HEADER, 4);
-    robocupreturnData.version       = GAMECONTROLLER_RETURN_STRUCT_VERSION;
-    robocupreturnData.team          = static_cast<uint8_t>(myTeam);
-    robocupreturnData.player        = static_cast<uint8_t>(playerNum + 1);
+    robocupreturnData.version = GAMECONTROLLER_RETURN_STRUCT_VERSION;
+    robocupreturnData.team = static_cast<uint8_t>(myTeam);
+    robocupreturnData.player = static_cast<uint8_t>(playerNum + 1);
 
-    if(position == POSITION_GK) robocupreturnData.message = GAMECONTROLLER_RETURN_MSG_GOALKEEPER;
-    else                        robocupreturnData.message = GAMECONTROLLER_RETURN_MSG_ALIVE;
+    if (position == POSITION_GK)
+        robocupreturnData.message = GAMECONTROLLER_RETURN_MSG_GOALKEEPER;
+    else
+        robocupreturnData.message = GAMECONTROLLER_RETURN_MSG_ALIVE;
 
     Data.push_back(static_cast<char>(robocupreturnData.header[0]));
     Data.push_back(static_cast<char>(robocupreturnData.header[1]));
@@ -519,5 +540,5 @@ void MainWindow::udpSend_callback()   //send udp data
 
     QHostAddress cntrAddr;
     cntrAddr.setAddress("192.168.0.68");
-    m_pSendSocket->writeDatagram(Data.data(),Data.size(), cntrAddr, 3939);
+    m_pSendSocket->writeDatagram(Data.data(), Data.size(), cntrAddr, 3939);
 }
