@@ -21,9 +21,9 @@
 #include <QThread>
 #include <string>
 
-#include "humanoid_interfaces/msg/robocupcontroller.hpp"
-#include "humanoid_interfaces/msg/gamecontroldata.hpp"
-#include "humanoid_interfaces/msg/gamecontrolreturndata.hpp"
+#include "gamecontroller/msg/robocupcontroller.hpp"
+#include "gamecontroller/msg/gamecontroldata.hpp"
+#include "gamecontroller/msg/gamecontrolreturndata.hpp"
 
 /*****************************************************************************
 ** Class
@@ -39,10 +39,10 @@ public:
 
   void run();
 
-  humanoid_interfaces::msg::Gamecontroldata gameControlData;
-  humanoid_interfaces::msg::Gamecontrolreturndata gameControlReturnData;
+  gamecontroller::msg::Gamecontroldata gameControlData;
+  gamecontroller::msg::Gamecontrolreturndata gameControlReturnData;
 
-  rclcpp::Publisher<humanoid_interfaces::msg::Gamecontroldata>::SharedPtr gamecontrollerPub;
+  rclcpp::Publisher<gamecontroller::msg::Gamecontroldata>::SharedPtr gamecontrollerPub;
 
   // config.yaml 파라미터
   std::string pubTopic;

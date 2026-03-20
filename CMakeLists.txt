@@ -16,11 +16,22 @@ find_package(Boost 1.71.0 REQUIRED COMPONENTS thread)
 find_package(Qt5 COMPONENTS Widgets Core Gui Network REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(humanoid_interfaces REQUIRED)
+find_package(rosidl_default_generators REQUIRED)
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
 find_package(
   rclcpp
   REQUIRED
+)
+
+rosidl_generate_interfaces(${PROJECT_NAME}
+  "msg/Gamecontroldata.msg"
+  "msg/Gamecontrolreturndata.msg"
+  "msg/Robocupcontroller.msg"
+)
+
+rosidl_get_typesupport_target(cpp_typesupport_target
+  ${PROJECT_NAME} "rosidl_typesupport_cpp"
 )
 
 file(GLOB PRO_SOURCE_DIR RELATIVE ${CMAKE_SOURCE_DIR} FOLLOW_SYMLINKS  src/*.cpp)
@@ -34,7 +45,8 @@ include_directories(
 	include/
 	${CMAKE_CURRENT_BINARY_DIR}
 )
-add_executable(${PROJECT_NAME}
+set(EXE_NAME ${PROJECT_NAME}_app)
+add_executable(${EXE_NAME}
     ${PRO_SOURCE_DIR}
     ${PRO_INCLUDE_DIR}
     ${PRO_UI_DIR}
@@ -42,9 +54,9 @@ add_executable(${PROJECT_NAME}
     ${QT_RESOUCE_HPP}
     ${QT_UI_HPP}
   )
-ament_target_dependencies(${PROJECT_NAME} rclcpp  Boost std_msgs humanoid_interfaces)
-target_link_libraries(${PROJECT_NAME} Qt5::Widgets Qt5::Core Qt5::Gui Qt5::Network ${OpenCV_LIBRARIES})
-install(TARGETS ${PROJECT_NAME} DESTINATION lib/${PROJECT_NAME})
+ament_target_dependencies(${EXE_NAME} rclcpp Boost std_msgs humanoid_interfaces)
+target_link_libraries(${EXE_NAME} Qt5::Widgets Qt5::Core Qt5::Gui Qt5::Network ${OpenCV_LIBRARIES} ${cpp_typesupport_target})
+install(TARGETS ${EXE_NAME} DESTINATION lib/${PROJECT_NAME})
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY config DESTINATION share/${PROJECT_NAME})
 if(BUILD_TESTING)
@@ -52,4 +64,5 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
+ament_export_dependencies(rosidl_default_runtime)
 ament_package()

@@ -33,7 +33,7 @@ QNode::QNode()
   dataPort     = (int)node->get_parameter("GAMECONTROLLER_DATA_PORT").as_int();
   returnPort   = (int)node->get_parameter("GAMECONTROLLER_RETURN_PORT").as_int();
 
-  gamecontrollerPub = node->create_publisher<humanoid_interfaces::msg::Gamecontroldata>(pubTopic, 10);
+  gamecontrollerPub = node->create_publisher<gamecontroller::msg::Gamecontroldata>(pubTopic, 10);
 
   this->start();
 }

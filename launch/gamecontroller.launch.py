@@ -14,7 +14,7 @@ def generate_launch_description():
     
     gamecontroller = Node(
         package='gamecontroller',
-        executable='gamecontroller',
+        executable='gamecontroller_app',
         name='gamecontroller',
         output='screen',
         parameters=[config_dir],
