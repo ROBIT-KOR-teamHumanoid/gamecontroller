@@ -19,6 +19,7 @@
 #include <rclcpp/rclcpp.hpp>
 #endif
 #include <QThread>
+#include <string>
 
 #include "humanoid_interfaces/msg/robocupcontroller.hpp"
 #include "humanoid_interfaces/msg/gamecontroldata.hpp"
@@ -42,6 +43,14 @@ public:
   humanoid_interfaces::msg::Gamecontrolreturndata gameControlReturnData;
 
   rclcpp::Publisher<humanoid_interfaces::msg::Gamecontroldata>::SharedPtr gamecontrollerPub;
+
+  // config.yaml 파라미터
+  std::string pubTopic;
+  int teamRobit;
+  int teamRobitRed;
+  int teamRobitBlue;
+  int dataPort;
+  int returnPort;
 
 private:
   std::shared_ptr<rclcpp::Node> node;

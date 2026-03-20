@@ -19,7 +19,21 @@ QNode::QNode()
   rclcpp::init(argc, argv);
   node = rclcpp::Node::make_shared("gamecontroller");
 
-  gamecontrollerPub = node->create_publisher<humanoid_interfaces::msg::Gamecontroldata>("gamecontroldata", 10);
+  node->declare_parameter("pub_topic",                  std::string("gamecontroldata"));
+  node->declare_parameter("TEAM-ROBIT_NUMBER",          4);
+  node->declare_parameter("TEAM_ROBIT_RED",             22);
+  node->declare_parameter("TEAM_ROBIT_BLUE",            23);
+  node->declare_parameter("GAMECONTROLLER_DATA_PORT",   3838);
+  node->declare_parameter("GAMECONTROLLER_RETURN_PORT", 3939);
+
+  pubTopic     = node->get_parameter("pub_topic").as_string();
+  teamRobit    = (int)node->get_parameter("TEAM-ROBIT_NUMBER").as_int();
+  teamRobitRed  = (int)node->get_parameter("TEAM_ROBIT_RED").as_int();
+  teamRobitBlue = (int)node->get_parameter("TEAM_ROBIT_BLUE").as_int();
+  dataPort     = (int)node->get_parameter("GAMECONTROLLER_DATA_PORT").as_int();
+  returnPort   = (int)node->get_parameter("GAMECONTROLLER_RETURN_PORT").as_int();
+
+  gamecontrollerPub = node->create_publisher<humanoid_interfaces::msg::Gamecontroldata>(pubTopic, 10);
 
   this->start();
 }

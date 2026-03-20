@@ -28,10 +28,11 @@
 #include <iostream>
 
 #include "QKeyEvent"
+#include "technical_dialog.hpp"
 
-#define TEAM_ROBIT 4
-#define TEAM_ROBIT_RED 22
-#define TEAM_ROBIT_BLUE 23
+// #define TEAM_ROBIT 4 //    TEAM-ROBIT_NUMBER: 4 CONFIG.YAML
+// #define TEAM_ROBIT_RED 22
+// #define TEAM_ROBIT_BLUE 23
 
 #define LEFT 0
 #define RIGHT 1
@@ -66,16 +67,12 @@ public:
   ~MainWindow();
   QNode *qnode;
 
-  void showNoMasterMessage();
-
   bool initAddrAndPort();
   void initSocket();
   void closeSocket();
 
   // kjh edit
   void uiUpdate();
-  void sendData();
-  void ChangeSendAddress(QHostAddress Address);
   void ChangeTechnicalMode();
 
   QList<QHostAddress> ipAddressesList;
@@ -85,7 +82,8 @@ private:
   void closeEvent(QCloseEvent *event);
 
   QTimer *g_timer;
-
+  QTimer *pub_timer;
+  
   QHostAddress senderAddress;
   quint16 senderPort;
 
@@ -104,14 +102,15 @@ private:
   int playerNum = 0;
   int initSide = 0;
   int mySide = 0;
-  int myTeam = TEAM_ROBIT;
+  int myTeam = 4;
 
 private Q_SLOTS:
   void on_comboBox_position_currentIndexChanged(int index);
   void on_Server_Open_clicked();
   void udpSend_callback();
-  void readData();
 
+  void readData();
+  void Pub_msg();
   void on_comboBox_state_currentIndexChanged(int index);
 
 private:

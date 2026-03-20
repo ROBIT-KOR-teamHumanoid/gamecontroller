@@ -15,6 +15,9 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::Robocu
 {
     ui->setupUi(this);
 
+    qnode = new QNode();
+    myTeam = qnode->teamRobit;
+
     bool isInit = initAddrAndPort();
     if (isInit)
     {
@@ -29,9 +32,11 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::Robocu
     QIcon icon("://ros-icon.png");
     this->setWindowIcon(icon);
 
-    qnode = new QNode();
-
     QObject::connect(qnode, SIGNAL(rosShutDown()), this, SLOT(close()));
+
+    pub_timer = new QTimer(this);
+    QObject::connect(pub_timer, SIGNAL(timeout()), this, SLOT(Pub_msg()));
+    pub_timer->start(1000);
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)
@@ -96,7 +101,7 @@ bool MainWindow::initAddrAndPort()
         }
     }
 
-    m_iPort = 3838;
+    m_iPort = qnode->dataPort;
 
     return isOpen_Network;
 }
@@ -185,6 +190,28 @@ void MainWindow::on_comboBox_state_currentIndexChanged(int index)
         qnode->gameControlData.readytime = 0;
     }
 
+    switch (index)
+    {
+    case 0:
+        qnode->gameControlData.state_name = "INITIAL";
+        break;
+    case 1:
+        qnode->gameControlData.state_name = "READY";
+        break;
+    case 2:
+        qnode->gameControlData.state_name = "SET";
+        break;
+    case 3:
+        qnode->gameControlData.state_name = "PLAYING";
+        break;
+    case 4:
+        qnode->gameControlData.state_name = "FINISHED";
+        break;
+
+    default:
+        break;
+    }
+
     qnode->gamecontrollerPub->publish(qnode->gameControlData);
 }
 
@@ -201,16 +228,16 @@ void MainWindow::on_Server_Open_clicked()
         switch (ui->comboBox_team->currentIndex())
         {
         case 0: // ROBIT
-            myTeam = TEAM_ROBIT;
+            myTeam = qnode->teamRobit;
             break;
         case 1: // ROBIT_RED
-            myTeam = TEAM_ROBIT_RED;
+            myTeam = qnode->teamRobitRed;
             break;
         case 2: // ROBIT_BLUE
-            myTeam = TEAM_ROBIT_BLUE;
+            myTeam = qnode->teamRobitBlue;
             break;
         default:
-            myTeam = TEAM_ROBIT;
+            myTeam = qnode->teamRobit;
             ui->comboBox_team->setCurrentIndex(0);
             break;
         }
@@ -240,33 +267,24 @@ void MainWindow::ChangeTechnicalMode()
 {
     cout << "!!TECHNICAL MODE ON!!" << endl;
 
-    ui->comboBox_position->setEnabled(false);
-
-    ui->label_title->setText("TECHNICAL CONTROLLER");
-    ui->label_title->setStyleSheet("font-size:20pt");
-
-    for (int i = 0; i < 5; i++)
-    {
-        ui->comboBox_state->removeItem(0);
-    }
-
-    ui->comboBox_state->addItem("TECHNICAL");
-    ui->comboBox_state->addItem("LOCAL KICKER");
-    ui->comboBox_state->addItem("LOCAL HELPER");
-    ui->comboBox_state->addItem("DYNAMIC KICK");
-    ui->comboBox_state->addItem("HIGH KICK");
-    ui->comboBox_state->addItem("PARKOUR");
-    ui->comboBox_state->addItem("OBSTACLE");
-
     playerNum = ui->comboBox_number->currentIndex();
     position = ui->comboBox_position->currentIndex();
 
+    ui->comboBox_position->setEnabled(false);
     ui->comboBox_number->setEnabled(false);
     ui->comboBox_team->setEnabled(false);
     ui->checkBox_side->setEnabled(false);
     ui->checkBox_kickoff->setEnabled(false);
 
-    ui->textEdit->deleteLater();
+    TechnicalDialog dlg(qnode, playerNum, initSide, position, this);
+    dlg.exec();
+
+    // 팝업 닫히면 설정 컨트롤 다시 활성화
+    ui->comboBox_position->setEnabled(true);
+    ui->comboBox_number->setEnabled(true);
+    ui->comboBox_team->setEnabled(true);
+    ui->checkBox_side->setEnabled(true);
+    ui->checkBox_kickoff->setEnabled(true);
 }
 
 void MainWindow::readData()
@@ -285,45 +303,56 @@ void MainWindow::readData()
     cout << "playerNum = " << playerNum + 1 << endl;
     cout << "position  = " << position << endl;
 
-    if (str.size() == 688)
+    if (str.size() == 118)
     {
         ui->textEdit->clear();
 
         memmove(&robocupData, str.data(), sizeof(RoboCupGameControlData));
-        cout << "state = " << (int)robocupData.state << endl;
-        cout << "penalty = " << (int)robocupData.teams[mySide].players[playerNum].penalty << endl;
-        cout << "half = " << (int)robocupData.firstHalf << endl;
-        cout << "kickoff team = " << (int)robocupData.kickOffTeam << endl;
-        cout << "secondary = " << (int)robocupData.secondaryState << endl;
-        cout << "Team 0 Number" << (int)robocupData.teams[0].teamNumber << endl;
-        cout << "Team 1 Number" << (int)robocupData.teams[1].teamNumber << endl;
+        cout << "state = "       << (int)robocupData.state << endl;
+        cout << "gamePhase = "   << (int)robocupData.gamePhase << endl;
+        cout << "setPlay = "     << (int)robocupData.setPlay << endl;
+        cout << "half = "        << (int)robocupData.firstHalf << endl;
+        cout << "kickingTeam = " << (int)robocupData.kickingTeam << endl;
+        cout << "Team 0 Number " << (int)robocupData.teams[0].teamNumber << endl;
+        cout << "Team 1 Number " << (int)robocupData.teams[1].teamNumber << endl;
 
         mySide = robocupData.teams[0].teamNumber == myTeam ? 0 : 1;
 
         if (robocupData.teams[0].teamNumber != myTeam &&
             robocupData.teams[1].teamNumber != myTeam)
         {
-
             cout << "!!NOT OUR GAME!!" << endl;
             return;
         }
 
-        qnode->gameControlData.robotnum = playerNum + 1;
-        qnode->gameControlData.position = position;
+        // gamePhase / setPlay → secondstate 변환
+        int secondstate = STATE2_NORMAL;
+        if (robocupData.gamePhase == GAME_PHASE_PENALTYSHOOT)
+            secondstate = STATE2_PENALTYSHOOT;
+        else if (robocupData.gamePhase == GAME_PHASE_OVERTIME)
+            secondstate = STATE2_OVERTIME;
+        else if (robocupData.gamePhase == GAME_PHASE_TIMEOUT)
+            secondstate = STATE2_TIMEOUT;
+        else if (robocupData.setPlay == SET_PLAY_GOAL_KICK)
+            secondstate = STATE2_GOAL_KICK;
+        else if (robocupData.setPlay == SET_PLAY_PUSHING_FREE_KICK)
+            secondstate = STATE2_DIRECT_FREEKICK;
+        else if (robocupData.setPlay == SET_PLAY_CORNER_KICK)
+            secondstate = STATE2_CORNER_KICK;
+        else if (robocupData.setPlay == SET_PLAY_KICK_IN)
+            secondstate = STATE2_THROW_IN;
+        else if (robocupData.setPlay == SET_PLAY_PENALTY_KICK)
+            secondstate = STATE2_PENALTYKICK;
 
-        qnode->gameControlData.state = (int)robocupData.state;
-        qnode->gameControlData.myside = /*robocupData.firstHalf ? initSide : !initSide;*/ mySide;
-        qnode->gameControlData.iskickoff = (robocupData.kickOffTeam == myTeam) ? true : false;
-        qnode->gameControlData.secondstate = (int)robocupData.secondaryState;
-        qnode->gameControlData.readytime = (int)robocupData.secondaryTime;
-        qnode->gameControlData.penalty = (int)robocupData.teams[mySide].players[playerNum].penalty;
-
+        qnode->gameControlData.robotnum    = playerNum + 1;
+        qnode->gameControlData.position    = position;
+        qnode->gameControlData.state       = (int)robocupData.state;
+        qnode->gameControlData.myside      = mySide;
+        qnode->gameControlData.iskickoff   = (robocupData.kickingTeam == myTeam) ? true : false;
+        qnode->gameControlData.secondstate = secondstate;
+        qnode->gameControlData.readytime   = (int)robocupData.secondaryTime;
+        qnode->gameControlData.penalty     = (int)robocupData.teams[mySide].players[playerNum].penalty;
         qnode->gameControlData.secondinfo.clear();
-        for (int i = 0; i < 4; i++)
-        {
-            qnode->gameControlData.secondinfo.push_back((int)robocupData.secondaryStateInfo[i]);
-            std::cout << "secondary info = " << qnode->gameControlData.secondinfo[i] << " " << std::endl;
-        }
 
         mySide = qnode->gameControlData.myside;
 
@@ -337,18 +366,20 @@ void MainWindow::readData()
     qnode->gameControlData.robotnum = playerNum + 1;
 }
 
+void MainWindow::Pub_msg()
+{
+    qnode->gamecontrollerPub->publish(qnode->gameControlData);
+}
+
 void MainWindow::uiUpdate()
 {
-    switch (robocupData.gameType)
+    switch (robocupData.competitionPhase)
     {
-    case GAME_ROUNDROBIN:
+    case COMPETITION_PHASE_ROUNDROBIN:
         ui->textEdit->append("ROUNDROBIN");
         break;
-    case GAME_PLAYOFF:
+    case COMPETITION_PHASE_PLAYOFF:
         ui->textEdit->append("PLAYOFF");
-        break;
-    case GAME_DROPIN:
-        ui->textEdit->append("DROPIN");
         break;
     default:
         break;
@@ -368,12 +399,7 @@ void MainWindow::uiUpdate()
         break;
     }
 
-    int secs_remaining = (int)robocupData.secsRemaining;
-    if (secs_remaining > 600)
-    {
-        secs_remaining = secs_remaining - 65536;
-    }
-    ui->textEdit->append("secs remaining: " + QString::number(secs_remaining) + "\n");
+    ui->textEdit->append("secs remaining: " + QString::number((int)robocupData.secsRemaining) + "\n");
 
     if (qnode->gameControlData.myside == LEFT)
     {
@@ -425,45 +451,27 @@ void MainWindow::uiUpdate()
 
     switch (qnode->gameControlData.penalty)
     {
-    case HL_BALL_MANIPULATION:
-        ui->textEdit->append("penalty: BALL_MANIPULATION");
-        break;
-    case HL_PHYSICAL_CONTACT:
-        ui->textEdit->append("penalty: PHYSICAL_CONTACT");
-        break;
-    case HL_ILLEGAL_ATTACK:
-        ui->textEdit->append("penalty: ILLEGAL_ATTACK");
-        break;
-    case HL_ILLEGAL_DEFENSE:
-        ui->textEdit->append("penalty: ILLEGAL_DEFENSE");
-        break;
-    case HL_PICKUP_OR_INCAPABLE:
-        ui->textEdit->append("penalty: PICKUP_OR_INCAPABLE");
-        break;
-    case HL_SERVICE:
-        ui->textEdit->append("penalty: SERVICE");
+    case PENALTY_NONE:
+        ui->textEdit->append("penalty: NONE");
         break;
     case SUBSTITUTE:
         ui->textEdit->append("penalty: SUBSTITUTE");
         break;
     default:
-        ui->textEdit->append("penalty: NONE");
+        ui->textEdit->append("penalty: " + QString::number(qnode->gameControlData.penalty));
         break;
     }
     if (qnode->gameControlData.penalty != NONE)
     {
-        ui->textEdit->append("secsTillUnpenalised: " + QString::number((int)robocupData.teams[mySide].players[playerNum].secsTillUnpenalised));
+        ui->textEdit->append("secsTillUnpenalised: " + QString::number((int)robocupData.teams[mySide].players[playerNum].secsTillUnpenalized));
     }
-
-    ui->textEdit->append("warning: " + QString::number((int)robocupData.teams[mySide].players[playerNum].numberOfWarnings));
-    ui->textEdit->append("yellow card: " + QString::number((int)robocupData.teams[mySide].players[playerNum].yellowCardCount));
-    ui->textEdit->append("red card: " + QString::number((int)robocupData.teams[mySide].players[playerNum].redCardCount));
 
     switch (qnode->gameControlData.secondstate)
     {
     case STATE2_PENALTYSHOOT:
         ui->textEdit->append("secondary: PENALTYSHOOT");
-        ui->textEdit->append("info : " + QString::number(qnode->gameControlData.secondinfo[0]) + " " + QString::number(qnode->gameControlData.secondinfo[1]));
+        if (qnode->gameControlData.secondinfo.size() >= 2)
+            ui->textEdit->append("info : " + QString::number(qnode->gameControlData.secondinfo[0]) + " " + QString::number(qnode->gameControlData.secondinfo[1]));
         break;
 
     case STATE2_OVERTIME:
@@ -476,32 +484,38 @@ void MainWindow::uiUpdate()
 
     case STATE2_DIRECT_FREEKICK:
         ui->textEdit->append("secondary: DIRECT_FREEKICK");
-        ui->textEdit->append("info: " + QString::number(qnode->gameControlData.secondinfo[0]) + " " + QString::number(qnode->gameControlData.secondinfo[1]));
+        if (qnode->gameControlData.secondinfo.size() >= 2)
+            ui->textEdit->append("info: " + QString::number(qnode->gameControlData.secondinfo[0]) + " " + QString::number(qnode->gameControlData.secondinfo[1]));
         break;
 
     case STATE2_INDIRECT_FREEKICK:
         ui->textEdit->append("secondary: INDIRECT_FREEKICK");
-        ui->textEdit->append("info: " + QString::number(qnode->gameControlData.secondinfo[0]) + " " + QString::number(qnode->gameControlData.secondinfo[1]));
+        if (qnode->gameControlData.secondinfo.size() >= 2)
+            ui->textEdit->append("info: " + QString::number(qnode->gameControlData.secondinfo[0]) + " " + QString::number(qnode->gameControlData.secondinfo[1]));
         break;
 
     case STATE2_PENALTYKICK:
         ui->textEdit->append("secondary: PENALTYKICK");
-        ui->textEdit->append("info: " + QString::number(qnode->gameControlData.secondinfo[0]) + " " + QString::number(qnode->gameControlData.secondinfo[1]));
+        if (qnode->gameControlData.secondinfo.size() >= 2)
+            ui->textEdit->append("info: " + QString::number(qnode->gameControlData.secondinfo[0]) + " " + QString::number(qnode->gameControlData.secondinfo[1]));
         break;
 
     case STATE2_CORNER_KICK:
         ui->textEdit->append("secondary: CORNERKICK");
-        ui->textEdit->append("info: " + QString::number(qnode->gameControlData.secondinfo[0]) + " " + QString::number(qnode->gameControlData.secondinfo[1]));
+        if (qnode->gameControlData.secondinfo.size() >= 2)
+            ui->textEdit->append("info: " + QString::number(qnode->gameControlData.secondinfo[0]) + " " + QString::number(qnode->gameControlData.secondinfo[1]));
         break;
 
     case STATE2_GOAL_KICK:
         ui->textEdit->append("secondary: GOALKICK");
-        ui->textEdit->append("info : " + QString::number(qnode->gameControlData.secondinfo[0]) + " " + QString::number(qnode->gameControlData.secondinfo[1]));
+        if (qnode->gameControlData.secondinfo.size() >= 2)
+            ui->textEdit->append("info : " + QString::number(qnode->gameControlData.secondinfo[0]) + " " + QString::number(qnode->gameControlData.secondinfo[1]));
         break;
 
     case STATE2_THROW_IN:
         ui->textEdit->append("secondary: THROWIN");
-        ui->textEdit->append("info: " + QString::number(qnode->gameControlData.secondinfo[0]) + " " + QString::number(qnode->gameControlData.secondinfo[1]));
+        if (qnode->gameControlData.secondinfo.size() >= 2)
+            ui->textEdit->append("info: " + QString::number(qnode->gameControlData.secondinfo[0]) + " " + QString::number(qnode->gameControlData.secondinfo[1]));
         break;
 
     default:
@@ -510,35 +524,32 @@ void MainWindow::uiUpdate()
     }
 }
 
-void MainWindow::udpSend_callback() // send udp data
+void MainWindow::udpSend_callback() // send udp data to GameController3
 {
-    QByteArray Data;
-
     if (m_pSendSocket == nullptr)
     {
         m_pSendSocket = new QUdpSocket(this);
     }
 
-    strncpy(robocupreturnData.header, GAMECONTROLLER_RETURN_STRUCT_HEADER, 4);
-    robocupreturnData.version = GAMECONTROLLER_RETURN_STRUCT_VERSION;
-    robocupreturnData.team = static_cast<uint8_t>(myTeam);
-    robocupreturnData.player = static_cast<uint8_t>(playerNum + 1);
+    // GC3 return struct: version 4, 32 bytes
+    // layout: header(4) + version(1) + player(1) + team(1) + fallen(1)
+    //         + pose[3](12) + ballAge(4) + ball[2](8)
+    RoboCupGameControlReturnData returnData;
+    returnData.playerNum = static_cast<uint8_t>(playerNum + 1);
+    returnData.teamNum   = static_cast<uint8_t>(myTeam);
+    returnData.fallen    = 0;
+    returnData.pose[0]   = 0.0f;
+    returnData.pose[1]   = 0.0f;
+    returnData.pose[2]   = 0.0f;
+    returnData.ballAge   = -1.0f;   // -1: ball not observed
+    returnData.ball[0]   = 0.0f;
+    returnData.ball[1]   = 0.0f;
 
-    if (position == POSITION_GK)
-        robocupreturnData.message = GAMECONTROLLER_RETURN_MSG_GOALKEEPER;
-    else
-        robocupreturnData.message = GAMECONTROLLER_RETURN_MSG_ALIVE;
+    QByteArray Data(reinterpret_cast<const char*>(&returnData), sizeof(returnData));
 
-    Data.push_back(static_cast<char>(robocupreturnData.header[0]));
-    Data.push_back(static_cast<char>(robocupreturnData.header[1]));
-    Data.push_back(static_cast<char>(robocupreturnData.header[2]));
-    Data.push_back(static_cast<char>(robocupreturnData.header[3]));
-    Data.push_back(static_cast<char>(robocupreturnData.version));
-    Data.push_back(static_cast<char>(robocupreturnData.team));
-    Data.push_back(static_cast<char>(robocupreturnData.player));
-    Data.push_back(static_cast<char>(robocupreturnData.message));
-
-    QHostAddress cntrAddr;
-    cntrAddr.setAddress("192.168.0.68");
-    m_pSendSocket->writeDatagram(Data.data(), Data.size(), cntrAddr, 3939);
+    // GC3 패킷을 보낸 주소로 응답 (자동 추적)
+    if (!senderAddress.isNull())
+    {
+        m_pSendSocket->writeDatagram(Data, senderAddress, qnode->returnPort);
+    }
 }
