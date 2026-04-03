@@ -35,6 +35,7 @@ TechnicalDialog::TechnicalDialog(QNode *node, int playerNum, int initSide, int p
     m_comboChallenge->addItem("HIGH KICK");
     m_comboChallenge->addItem("PARKOUR");
     m_comboChallenge->addItem("OBSTACLE");
+    m_comboChallenge->addItem("CORNER KICK RECEIVER");
     layout->addWidget(m_comboChallenge);
 
     layout->addSpacing(10);
@@ -79,7 +80,10 @@ void TechnicalDialog::onChallengeChanged(int index)
     case 6:
         m_qnode->gameControlData.state_name = "OBSTACLE";
         break;
-    
+    case 7:
+        m_qnode->gameControlData.state_name = "CORNER KICK RECEIVER";
+        break;
+
     default:
         break;
     }
