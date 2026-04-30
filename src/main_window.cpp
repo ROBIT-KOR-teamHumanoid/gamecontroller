@@ -254,7 +254,7 @@ void MainWindow::on_Server_Open_clicked()
 
         g_timer = new QTimer(this);
         QObject::connect(g_timer, SIGNAL(timeout()), this, SLOT(udpSend_callback()));
-        g_timer->start(100);
+        g_timer->start(500);
     }
     else
     {
