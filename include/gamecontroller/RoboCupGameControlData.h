@@ -4,33 +4,30 @@
 #include <stdint.h>
 
 // -------------------------------------------------------
-// GameController3 Protocol Version 18 (118 bytes)
+// GameController Protocol Version 19 (198 bytes)
 // -------------------------------------------------------
 
 #define GAMECONTROLLER_DATA_PORT            3838
-#define GAMECONTROLLER_RETURN_PORT          3939 ///////////////////////////////// 잘 보기
+#define GAMECONTROLLER_RETURN_PORT          3939
 
 #define GAMECONTROLLER_STRUCT_HEADER        "RGme"
-#define GAMECONTROLLER_STRUCT_VERSION       18
-#define GAMECONTROLLER_STRUCT_SIZE          118
+#define GAMECONTROLLER_STRUCT_VERSION       19
+#define GAMECONTROLLER_STRUCT_SIZE          198
 
 #define MAX_NUM_PLAYERS                     20
 
-// Competition phase
-#define COMPETITION_PHASE_ROUNDROBIN        0
-#define COMPETITION_PHASE_PLAYOFF           1
-
 // Competition type
-#define COMPETITION_TYPE_NORMAL             0
-#define COMPETITION_TYPE_MOST_PASSES        1
+#define COMPETITION_TYPE_SMALL              0
+#define COMPETITION_TYPE_MIDDLE             1
+#define COMPETITION_TYPE_LARGE              2
 
 // Game phase
 #define GAME_PHASE_NORMAL                   0
-#define GAME_PHASE_PENALTYSHOOT             1
-#define GAME_PHASE_OVERTIME                 2
+#define GAME_PHASE_PENALTY_SHOOT_OUT        1
+#define GAME_PHASE_EXTRA_TIME               2
 #define GAME_PHASE_TIMEOUT                  3
 
-// State (same values as before)
+// State
 #define STATE_INITIAL                       0
 #define STATE_READY                         1
 #define STATE_SET                           2
@@ -39,18 +36,29 @@
 
 // Set play
 #define SET_PLAY_NONE                       0
-#define SET_PLAY_GOAL_KICK                  1
-#define SET_PLAY_PUSHING_FREE_KICK          2
-#define SET_PLAY_CORNER_KICK                3
-#define SET_PLAY_KICK_IN                    4
-#define SET_PLAY_PENALTY_KICK               5
+#define SET_PLAY_DIRECT_FREE_KICK           1
+#define SET_PLAY_INDIRECT_FREE_KICK         2
+#define SET_PLAY_PENALTY_KICK               3
+#define SET_PLAY_THROW_IN                   4
+#define SET_PLAY_GOAL_KICK                  5
+#define SET_PLAY_CORNER_KICK                6
 
 #define KICKING_TEAM_NONE                   255
 
 // Penalty
 #define NONE                                0
 #define PENALTY_NONE                        0
-#define SUBSTITUTE                          14
+#define PENALTY_ILLEGAL_POSITIONING         1
+#define PENALTY_MOTION_IN_SET               2
+#define PENALTY_LOCAL_GAME_STUCK            3
+#define PENALTY_INCAPABLE_ROBOT             4
+#define PENALTY_PICK_UP                     5
+#define PENALTY_BALL_HOLDING                6
+#define PENALTY_LEAVING_THE_FIELD           7
+#define PENALTY_PLAYING_WITH_ARMS_HANDS     8
+#define PENALTY_PUSHING                     9
+#define PENALTY_SENT_OFF                    10
+#define SUBSTITUTE                          11
 #define MANUAL                              15
 
 // secondstate 호환용 (uiUpdate에서 사용)
@@ -67,15 +75,17 @@
 
 struct RobotInfo
 {
-    uint8_t penalty;              // penalty state of the player
-    uint8_t secsTillUnpenalized;  // estimate of time till unpenalised
+    uint8_t penalty;               // penalty state of the player
+    uint8_t secsTillUnpenalised;   // estimate of time till unpenalised
+    uint8_t warnings;              // number of warnings
+    uint8_t cautions;              // number of cautions (yellow cards)
 };
 
 struct TeamInfo
 {
     uint8_t  teamNumber;
-    uint8_t  fieldPlayerColor;
-    uint8_t  goalkeeperColor;
+    uint8_t  fieldPlayerColour;
+    uint8_t  goalkeeperColour;
     uint8_t  goalkeeper;
     uint8_t  score;
     uint8_t  penaltyShot;
@@ -87,11 +97,11 @@ struct TeamInfo
 struct RoboCupGameControlData
 {
     char     header[4];           // "RGme"
-    uint8_t  version;             // 18
+    uint8_t  version;             // 19
     uint8_t  packetNumber;
     uint8_t  playersPerTeam;
-    uint8_t  competitionPhase;    // COMPETITION_PHASE_*
     uint8_t  competitionType;     // COMPETITION_TYPE_*
+    uint8_t  stopped;             // 1 = play is currently stopped, 0 otherwise
     uint8_t  gamePhase;           // GAME_PHASE_*
     uint8_t  state;               // STATE_*
     uint8_t  setPlay;             // SET_PLAY_*

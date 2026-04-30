@@ -303,7 +303,7 @@ void MainWindow::readData()
     cout << "playerNum = " << playerNum + 1 << endl;
     cout << "position  = " << position << endl;
 
-    if (str.size() == 118)
+    if (str.size() == 198)
     {
         ui->textEdit->clear();
 
@@ -327,22 +327,24 @@ void MainWindow::readData()
 
         // gamePhase / setPlay → secondstate 변환
         int secondstate = STATE2_NORMAL;
-        if (robocupData.gamePhase == GAME_PHASE_PENALTYSHOOT)
+        if (robocupData.gamePhase == GAME_PHASE_PENALTY_SHOOT_OUT)
             secondstate = STATE2_PENALTYSHOOT;
-        else if (robocupData.gamePhase == GAME_PHASE_OVERTIME)
+        else if (robocupData.gamePhase == GAME_PHASE_EXTRA_TIME)
             secondstate = STATE2_OVERTIME;
         else if (robocupData.gamePhase == GAME_PHASE_TIMEOUT)
             secondstate = STATE2_TIMEOUT;
-        else if (robocupData.setPlay == SET_PLAY_GOAL_KICK)
-            secondstate = STATE2_GOAL_KICK;
-        else if (robocupData.setPlay == SET_PLAY_PUSHING_FREE_KICK)
+        else if (robocupData.setPlay == SET_PLAY_DIRECT_FREE_KICK)
             secondstate = STATE2_DIRECT_FREEKICK;
-        else if (robocupData.setPlay == SET_PLAY_CORNER_KICK)
-            secondstate = STATE2_CORNER_KICK;
-        else if (robocupData.setPlay == SET_PLAY_KICK_IN)
-            secondstate = STATE2_THROW_IN;
+        else if (robocupData.setPlay == SET_PLAY_INDIRECT_FREE_KICK)
+            secondstate = STATE2_INDIRECT_FREEKICK;
         else if (robocupData.setPlay == SET_PLAY_PENALTY_KICK)
             secondstate = STATE2_PENALTYKICK;
+        else if (robocupData.setPlay == SET_PLAY_THROW_IN)
+            secondstate = STATE2_THROW_IN;
+        else if (robocupData.setPlay == SET_PLAY_GOAL_KICK)
+            secondstate = STATE2_GOAL_KICK;
+        else if (robocupData.setPlay == SET_PLAY_CORNER_KICK)
+            secondstate = STATE2_CORNER_KICK;
 
         qnode->gameControlData.robotnum    = playerNum + 1;
         qnode->gameControlData.position    = position;
@@ -373,13 +375,16 @@ void MainWindow::Pub_msg()
 
 void MainWindow::uiUpdate()
 {
-    switch (robocupData.competitionPhase)
+    switch (robocupData.competitionType)
     {
-    case COMPETITION_PHASE_ROUNDROBIN:
-        ui->textEdit->append("ROUNDROBIN");
+    case COMPETITION_TYPE_SMALL:
+        ui->textEdit->append("SMALL SIZE");
         break;
-    case COMPETITION_PHASE_PLAYOFF:
-        ui->textEdit->append("PLAYOFF");
+    case COMPETITION_TYPE_MIDDLE:
+        ui->textEdit->append("MIDDLE SIZE");
+        break;
+    case COMPETITION_TYPE_LARGE:
+        ui->textEdit->append("LARGE SIZE");
         break;
     default:
         break;
@@ -463,7 +468,7 @@ void MainWindow::uiUpdate()
     }
     if (qnode->gameControlData.penalty != NONE)
     {
-        ui->textEdit->append("secsTillUnpenalised: " + QString::number((int)robocupData.teams[mySide].players[playerNum].secsTillUnpenalized));
+        ui->textEdit->append("secsTillUnpenalised: " + QString::number((int)robocupData.teams[mySide].players[playerNum].secsTillUnpenalised));
     }
 
     switch (qnode->gameControlData.secondstate)

@@ -3,7 +3,7 @@
  *
  * @brief Qt based gui for %(package)s.
  *
- * @date August 2024
+ * @date August 2026
  **/
 
 #ifndef gamecontroller_MAIN_WINDOW_H
