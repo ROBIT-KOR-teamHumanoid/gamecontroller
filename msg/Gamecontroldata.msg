@@ -4,6 +4,7 @@ int64 myteam
 
 int64 state
 string state_name
+int64 stopped
 int64 myside
 int64 iskickoff
 int64 readytime

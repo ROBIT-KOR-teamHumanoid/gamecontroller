@@ -349,6 +349,7 @@ void MainWindow::readData()
         qnode->gameControlData.robotnum    = playerNum + 1;
         qnode->gameControlData.position    = position;
         qnode->gameControlData.state       = (int)robocupData.state;
+        qnode->gameControlData.stopped     = (int)robocupData.stopped;
         qnode->gameControlData.myside      = mySide;
         qnode->gameControlData.iskickoff   = (robocupData.kickingTeam == myTeam) ? true : false;
         qnode->gameControlData.secondstate = secondstate;
