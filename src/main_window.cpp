@@ -183,7 +183,7 @@ void MainWindow::on_comboBox_state_currentIndexChanged(int index)
 
     if (index == 1) // state: ready
     {
-        qnode->gameControlData.readytime = 30;
+        qnode->gameControlData.readytime = 45;
     }
     else
     {
