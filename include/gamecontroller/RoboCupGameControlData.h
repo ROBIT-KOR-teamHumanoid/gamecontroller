@@ -11,8 +11,8 @@
 #define GAMECONTROLLER_RETURN_PORT          3939
 
 #define GAMECONTROLLER_STRUCT_HEADER        "RGme"
-#define GAMECONTROLLER_STRUCT_VERSION       19
-#define GAMECONTROLLER_STRUCT_SIZE          198
+#define GAMECONTROLLER_STRUCT_VERSION       20
+#define GAMECONTROLLER_STRUCT_SIZE          158
 
 #define MAX_NUM_PLAYERS                     20
 
@@ -77,7 +77,6 @@ struct RobotInfo
 {
     uint8_t penalty;               // penalty state of the player
     uint8_t secsTillUnpenalised;   // estimate of time till unpenalised
-    uint8_t warnings;              // number of warnings
     uint8_t cautions;              // number of cautions (yellow cards)
 };
 

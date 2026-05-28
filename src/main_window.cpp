@@ -11,11 +11,11 @@
 
 #include "../include/gamecontroller/main_window.hpp"
 
-MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), ui(new Ui::RobocupController)
+MainWindow::MainWindow(int argc, char** argv, QWidget *parent) : QMainWindow(parent), ui(new Ui::RobocupController)
 {
     ui->setupUi(this);
 
-    qnode = new QNode();
+    qnode = new QNode(argc, argv);
     myTeam = qnode->teamRobit;
 
     bool isInit = initAddrAndPort();
@@ -253,7 +253,7 @@ void MainWindow::on_Server_Open_clicked()
         qnode->gamecontrollerPub->publish(qnode->gameControlData);
 
         g_timer = new QTimer(this);
-        QObject::connect(g_timer, SIGNAL(timeout()), this, SLOT(udpSend_callback()));
+        QObject::connect(g_timer, SIGNAL(timeout()), this, SLOT(GameController_callback()));
         g_timer->start(500);
     }
     else
@@ -303,7 +303,7 @@ void MainWindow::readData()
     cout << "playerNum = " << playerNum + 1 << endl;
     cout << "position  = " << position << endl;
 
-    if (str.size() == 198)
+    if (str.size() == sizeof(RoboCupGameControlData))
     {
         ui->textEdit->clear();
 
@@ -530,32 +530,30 @@ void MainWindow::uiUpdate()
     }
 }
 
-void MainWindow::udpSend_callback() // send udp data to GameController3
+void MainWindow::GameController_callback()
 {
-    if (m_pSendSocket == nullptr)
-    {
-        m_pSendSocket = new QUdpSocket(this);
-    }
+  if (m_pSendSocket == nullptr)
+  {
+    m_pSendSocket = new QUdpSocket(this);
+  }
 
-    // GC3 return struct: version 4, 32 bytes
-    // layout: header(4) + version(1) + player(1) + team(1) + fallen(1)
-    //         + pose[3](12) + ballAge(4) + ball[2](8)
-    RoboCupGameControlReturnData returnData;
-    returnData.playerNum = static_cast<uint8_t>(playerNum + 1);
-    returnData.teamNum   = static_cast<uint8_t>(myTeam);
-    returnData.fallen    = 0;
-    returnData.pose[0]   = 0.0f;
-    returnData.pose[1]   = 0.0f;
-    returnData.pose[2]   = 0.0f;
-    returnData.ballAge   = -1.0f;   // -1: ball not observed
-    returnData.ball[0]   = 0.0f;
-    returnData.ball[1]   = 0.0f;
+  RoboCupGameControlReturnData returnData;
+  returnData.playerNum = static_cast<uint8_t>(playerNum + 1);
+  returnData.teamNum = static_cast<uint8_t>(myTeam);
+  returnData.fallen = 0;
+  returnData.pose[0] = 0.0f;
+  returnData.pose[1] = 0.0f;
+  returnData.pose[2] = 0.0f;
+  returnData.ballAge = -1.0f;
+  returnData.ball[0] = 0.0f;
+  returnData.ball[1] = 0.0f;
 
-    QByteArray Data(reinterpret_cast<const char*>(&returnData), sizeof(returnData));
+  QByteArray Data(reinterpret_cast<const char *>(&returnData), sizeof(returnData));
 
-    // GC3 패킷을 보낸 주소로 응답 (자동 추적)
-    if (!senderAddress.isNull())
-    {
-        m_pSendSocket->writeDatagram(Data, senderAddress, qnode->returnPort);
-    }
+  if (!senderAddress.isNull())
+  {
+    m_pSendSocket->writeDatagram(Data, senderAddress, qnode->returnPort);
+  }
 }
+
+

@@ -34,7 +34,7 @@ class QNode : public QThread
 {
   Q_OBJECT
 public:
-  QNode();
+  QNode(int argc, char** argv);
   ~QNode();
 
   void run();

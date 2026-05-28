@@ -63,7 +63,7 @@ class MainWindow : public QMainWindow
 
 public:
   QTimer *mTimer;
-  MainWindow(QWidget *parent = nullptr);
+  MainWindow(int argc, char** argv, QWidget *parent = nullptr);
   ~MainWindow();
   QNode *qnode;
 
@@ -107,7 +107,7 @@ private:
 private Q_SLOTS:
   void on_comboBox_position_currentIndexChanged(int index);
   void on_Server_Open_clicked();
-  void udpSend_callback();
+  void GameController_callback();
 
   void readData();
   void Pub_msg();

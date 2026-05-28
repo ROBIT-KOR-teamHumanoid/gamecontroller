@@ -1,7 +1,7 @@
 /**:
   ros__parameters:
    pub_topic: "gamecontroller"
-   TEAM-ROBIT_NUMBER: 4
+   TEAM_ROBIT_NUMBER: 21
    TEAM_ROBIT_RED : 22
    TEAM_ROBIT_BLUE : 23
 
