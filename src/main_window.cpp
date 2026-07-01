@@ -99,6 +99,11 @@ bool MainWindow::initAddrAndPort()
         {
             m_qstrIp = QHostAddress(QHostAddress::LocalHost).toString();
         }
+
+        if (isTimeOut)
+        {
+            isOpen_Network = true;
+        }
     }
 
     m_iPort = qnode->dataPort;
