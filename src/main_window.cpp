@@ -360,6 +360,9 @@ void MainWindow::readData()
         qnode->gameControlData.secondstate = secondstate;
         qnode->gameControlData.readytime   = (int)robocupData.secondaryTime;
         qnode->gameControlData.penalty     = (int)robocupData.teams[mySide].players[playerNum].penalty;
+        qnode->gameControlData.message_budget = (int)robocupData.teams[mySide].messageBudget;
+        ui->label_msg_budget_value->setText(
+            QString::number(qnode->gameControlData.message_budget));
         qnode->gameControlData.secondinfo.clear();
 
         mySide = qnode->gameControlData.myside;
