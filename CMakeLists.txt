@@ -56,7 +56,18 @@ add_executable(${EXE_NAME}
   )
 ament_target_dependencies(${EXE_NAME} rclcpp Boost std_msgs humanoid_interfaces)
 target_link_libraries(${EXE_NAME} Qt5::Widgets Qt5::Core Qt5::Gui Qt5::Network ${OpenCV_LIBRARIES} ${cpp_typesupport_target})
-install(TARGETS ${EXE_NAME} DESTINATION lib/${PROJECT_NAME})
+
+# GC 출력을 로봇 N대로 나누는 노드. Qt 앱과 무관해서 위 glob(src/*.cpp)에
+# 걸리지 않도록 src/fanout/ 아래에 둔다 — 같이 걸리면 main 이 충돌한다.
+set(FANOUT_EXE_NAME gc_fanout_node)
+add_executable(${FANOUT_EXE_NAME}
+    src/fanout/gc_fanout_node.cpp
+    src/fanout/gc_fanout_sim.cpp
+  )
+ament_target_dependencies(${FANOUT_EXE_NAME} rclcpp)
+target_link_libraries(${FANOUT_EXE_NAME} ${cpp_typesupport_target})
+
+install(TARGETS ${EXE_NAME} ${FANOUT_EXE_NAME} DESTINATION lib/${PROJECT_NAME})
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY config DESTINATION share/${PROJECT_NAME})
 if(BUILD_TESTING)
