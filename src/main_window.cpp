@@ -18,6 +18,23 @@ MainWindow::MainWindow(int argc, char** argv, QWidget *parent) : QMainWindow(par
     qnode = new QNode(argc, argv);
     myTeam = qnode->teamRobit;
 
+    // PLAYING(3) <-> INITIAL(0), 콤보박스를 바꿔서 기존 상태 변경/퍼블리시 경로를 그대로 탄다
+    qnode->togglePlayHandler = [this](std::string &msg) -> bool
+    {
+        if (m_bIsServerOpen)
+        {
+            msg = "server open: state is controlled by GameController";
+            return false;
+        }
+
+        const int next = (ui->comboBox_state->currentIndex() == 3) ? 0 : 3;
+        ui->comboBox_state->setCurrentIndex(next);
+
+        msg = qnode->gameControlData.state_name;
+        std::cout << "[toggle_playing] state -> " << msg << std::endl;
+        return true;
+    };
+
     bool isInit = initAddrAndPort();
     if (isInit)
     {

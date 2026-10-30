@@ -33,6 +33,26 @@ QNode::QNode(int argc, char** argv)
 
   gamecontrollerPub = node->create_publisher<gamecontroller::msg::Gamecontroldata>(pubTopic, 10);
 
+  // 외부(FT232 핫키)에서 PLAYING <-> INITIAL 토글
+  togglePlaySrv = node->create_service<std_srvs::srv::Trigger>(
+    "~/toggle_playing",
+    [this](const std::shared_ptr<std_srvs::srv::Trigger::Request>,
+           std::shared_ptr<std_srvs::srv::Trigger::Response> res)
+    {
+      bool ok = false;
+      std::string msg = "handler not ready";
+
+      // 콤보박스(UI)는 메인 스레드에서만 건드릴 수 있으므로 메인 스레드에서 실행하고 결과를 기다린다
+      if (togglePlayHandler)
+      {
+        QMetaObject::invokeMethod(
+          this, [&]() { ok = togglePlayHandler(msg); }, Qt::BlockingQueuedConnection);
+      }
+
+      res->success = ok;
+      res->message = msg;
+    });
+
   this->start();
 }
 

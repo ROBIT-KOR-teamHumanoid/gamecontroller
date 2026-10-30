@@ -17,8 +17,10 @@
 *****************************************************************************/
 #ifndef Q_MOC_RUN
 #include <rclcpp/rclcpp.hpp>
+#include <std_srvs/srv/trigger.hpp>
 #endif
 #include <QThread>
+#include <functional>
 #include <string>
 
 #include "gamecontroller/msg/robocupcontroller.hpp"
@@ -52,8 +54,12 @@ public:
   int dataPort;
   int returnPort;
 
+  // ~/toggle_playing 서비스 처리 (MainWindow가 등록, 메인 스레드에서 실행됨)
+  std::function<bool(std::string&)> togglePlayHandler;
+
 private:
   std::shared_ptr<rclcpp::Node> node;
+  rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr togglePlaySrv;
 
 Q_SIGNALS:
   void rosShutDown();

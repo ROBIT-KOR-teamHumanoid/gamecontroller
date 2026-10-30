@@ -15,6 +15,7 @@ find_package(rclcpp REQUIRED)
 find_package(Boost 1.71.0 REQUIRED COMPONENTS thread)
 find_package(Qt5 COMPONENTS Widgets Core Gui Network REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(std_srvs REQUIRED)
 find_package(irc_humanoid_interfaces REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 # further dependencies manually.
@@ -54,7 +55,7 @@ add_executable(${EXE_NAME}
     ${QT_RESOUCE_HPP}
     ${QT_UI_HPP}
   )
-ament_target_dependencies(${EXE_NAME} rclcpp Boost std_msgs irc_humanoid_interfaces)
+ament_target_dependencies(${EXE_NAME} rclcpp Boost std_msgs std_srvs irc_humanoid_interfaces)
 target_link_libraries(${EXE_NAME} Qt5::Widgets Qt5::Core Qt5::Gui Qt5::Network ${OpenCV_LIBRARIES} ${cpp_typesupport_target})
 install(TARGETS ${EXE_NAME} DESTINATION lib/${PROJECT_NAME})
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
